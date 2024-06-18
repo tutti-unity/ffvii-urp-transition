@@ -20,6 +20,9 @@ Shader "Custom/Tifa"
         
         float _rotationAmount;
         float _density;
+        float _zoomAmount;
+
+
 
 
         CBUFFER_END
@@ -65,10 +68,30 @@ Shader "Custom/Tifa"
                     s, c, 0, 0,
                     0, 0, 1, 0,
                     0, 0, 0, 1
-                    );
+                );
 
                 float aspectRatio = _ScreenParams.x / _ScreenParams.y;
             
+                float2 newUV = uv - 0.5;
+                newUV.x *= aspectRatio;
+                newUV = mul(m,newUV);
+                newUV.x /= aspectRatio;
+                newUV += 0.5;
+
+                return newUV;
+            }
+
+            float2 zoomIn(float2 uv, float zoomAmount)
+            {
+                float4x4 m = float4x4(
+                    1 / zoomAmount, 0, 0, 0,
+                    0, 1 / zoomAmount, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1
+                );
+
+                float aspectRatio = _ScreenParams.x / _ScreenParams.y;
+
                 float2 newUV = uv - 0.5;
                 newUV.x *= aspectRatio;
                 newUV = mul(m,newUV);
@@ -84,8 +107,11 @@ Shader "Custom/Tifa"
                 
                 for (float r = 0; r < _rotationAmount; r += _density)
                 {
+                    const float pi = 3.141592653589793238462;
+                    float scale = 1.0 + r / (2 * pi) * (_zoomAmount - 1);
                     const float2 rotation = rotate(i.uv, r);
-                    color = color * 0.5 + 0.5 * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, rotation);
+                    const float2 zoom = zoomIn(rotation, scale);
+                    color = color * 0.5 + 0.5 * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, zoom);
                 }
                 
                 return color;
