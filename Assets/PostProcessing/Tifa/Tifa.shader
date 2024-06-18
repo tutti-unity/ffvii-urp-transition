@@ -19,6 +19,7 @@ Shader "Custom/Tifa"
         uniform half4 _MainTex_TexelSize;
         
         float _rotationAmount;
+        float _density;
 
 
         CBUFFER_END
@@ -52,8 +53,13 @@ Shader "Custom/Tifa"
                 o.positionCS = PositionInputs.positionCS;   
                 o.uv = TRANSFORM_TEX(v.texcoord, _MainTex);
 
-                float s = sin(_rotationAmount);
-                float c = cos(_rotationAmount);
+                return o;
+            }
+
+            float2 rotate(float2 uv, float rotationAmount)
+            {
+                float s = sin(rotationAmount);
+                float c = cos(rotationAmount);
                 float4x4 m = float4x4(
                     c,-s, 0, 0,
                     s, c, 0, 0,
@@ -63,22 +69,25 @@ Shader "Custom/Tifa"
 
                 float aspectRatio = _ScreenParams.x / _ScreenParams.y;
             
-                float2 newUV = o.uv - 0.5;
-                float2 rotation = float2(aspectRatio, 1 / aspectRatio);
-                rotation = mul(m, rotation); 
-                o.uv = mul(m,newUV) * rotation;
-                o.uv += 0.5;
+                float2 newUV = uv - 0.5;
+                newUV.x *= aspectRatio;
+                newUV = mul(m,newUV);
+                newUV.x /= aspectRatio;
+                newUV += 0.5;
 
-                return o;
+                return newUV;
             }
 
             half4 frag (v2f i) : SV_Target
             {
-                float aspectRatio = _ScreenParams.x / _ScreenParams.y;
-                float2 translatedCoords = i.uv - 0.5;
-                float2 invertedCoords = float2(translatedCoords.y * (1 / aspectRatio) , translatedCoords.x * aspectRatio);
-                
                 float4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
+                
+                for (float r = 0; r < _rotationAmount; r += _density)
+                {
+                    const float2 rotation = rotate(i.uv, r);
+                    color = color * 0.5 + 0.5 * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, rotation);
+                }
+                
                 return color;
             }
             ENDHLSL

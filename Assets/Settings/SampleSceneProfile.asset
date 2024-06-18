@@ -188,6 +188,9 @@ MonoBehaviour:
   rotationAmount:
     m_OverrideState: 1
     m_Value: 0
+  density:
+    m_OverrideState: 1
+    m_Value: 0.1
 --- !u!114 &7568889958890809505
 MonoBehaviour:
   m_ObjectHideFlags: 3
